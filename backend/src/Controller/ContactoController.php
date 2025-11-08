@@ -39,8 +39,9 @@ class ContactoController extends AbstractController
 
         // 4️⃣ Crear y enviar el correo
         $emailMessage = (new Email())
-            ->from($email)
-            ->to('candonromeroalvaro2@gmail.com') // Tu correo destino
+            ->from('candonromeroalvaro2@gmail.com') // DEBE ser tu correo
+            ->replyTo($email) // correo del usuario para poder responderle
+            ->to('candonromeroalvaro2@gmail.com') // destino
             ->subject("📩 Nuevo mensaje de contacto: $asunto")
             ->text("Nombre: $nombre\nEmail: $email\n\nMensaje:\n$mensaje");
 

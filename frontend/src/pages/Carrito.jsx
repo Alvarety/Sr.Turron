@@ -48,7 +48,17 @@ export default function Carrito({ carrito, setCarrito, usuario }) {
         })),
       };
 
-      const res = await axios.post("http://127.0.0.1:8000/api/pedidos", pedido);
+      console.log("Token enviado:", localStorage.getItem("token"));
+
+      const res = await axios.post(
+        "http://127.0.0.1:8000/api/pedidos",
+        pedido,
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`, // <— token aquí
+          },
+        }
+      );
 
       if (res.status === 200 || res.status === 201) {
         alert("✅ Pedido realizado con éxito");
