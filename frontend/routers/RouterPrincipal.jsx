@@ -80,10 +80,16 @@ export default function RouterPrincipal({ usuario, setUsuario, carrito, setCarri
       <Route 
         path="/carrito" 
         element={
-          <LayoutPrincipal usuario={usuario}>
-            <Carrito usuario={usuario} carrito={carrito} setCarrito={setCarrito} />
-          </LayoutPrincipal>
-        } 
+          usuario ? (
+            <LayoutPrincipal usuario={usuario}>
+              <Carrito usuario={usuario} carrito={carrito} setCarrito={setCarrito} />
+            </LayoutPrincipal>
+          ) : (
+            <LayoutMinimal>
+              <Login setUsuario={setUsuario} />
+            </LayoutMinimal>
+          )
+        }
       />
       <Route path="/novedades" element={
         <LayoutPrincipal usuario={usuario}>

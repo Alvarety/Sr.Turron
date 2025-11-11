@@ -41,9 +41,11 @@ const Navbar = ({ usuario, setUsuario }) => {
             <li className="nav-item">
               <Link className="nav-link custom-nav-link" to="/productos">Productos</Link>
             </li>
-            <li className="nav-item">
-              <Link className="nav-link custom-nav-link" to="/carrito">Carrito</Link>
-            </li>
+            {usuario && (
+              <li className="nav-item">
+                <Link className="nav-link custom-nav-link" to="/carrito">Carrito</Link>
+              </li>
+            )}
             {usuario ? (
               <li className="nav-item dropdown">
                 <button
