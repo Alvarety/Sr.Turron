@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
+import { authFetch } from "../pages/admin/utils/api";
 
 export default function Login({ setUsuario }) {
   const [email, setEmail] = useState("");
@@ -12,7 +13,8 @@ export default function Login({ setUsuario }) {
     setError("");
 
     try {
-      const res = await fetch("http://localhost:8000/api/users/login", {
+      // 🔹 Login con fetch normal, porque aún no tenemos token
+      const res = await fetch("http://127.0.0.1:8000/api/users/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
@@ -29,22 +31,25 @@ export default function Login({ setUsuario }) {
       setUsuario(data.usuario);
       localStorage.setItem("usuario", JSON.stringify(data.usuario));
 
-      // ✅ Guardar token (LO IMPORTANTE)
+      // ✅ Guardar token
       if (data.token) {
         localStorage.setItem("token", data.token);
         console.log("Token guardado ✅", data.token);
       } else {
-        console.warn("⚠️ El backend no está enviando token.");
+        console.warn("⚠️ El backend no envió token.");
       }
+
+      // 🔹 Opcional: probar authFetch con el token recién guardado
+      const prueba = await authFetch("http://127.0.0.1:8000/api/usuarios");
+      console.log("Prueba authFetch:", prueba);
 
       navigate("/");
 
     } catch (err) {
-      console.error(err);
+      console.error("Error en Login.jsx:", err);
       setError("Error del servidor");
     }
   };
-
 
   return (
     <div className="page-center">
@@ -69,7 +74,6 @@ export default function Login({ setUsuario }) {
           <button type="submit">Entrar</button>
         </form>
 
-        {/* Botón de registrarse */}
         <p style={{ marginTop: "1rem", textAlign: "center" }}>
           ¿No tienes cuenta?{" "}
           <Link to="/registro" className="btn-register">

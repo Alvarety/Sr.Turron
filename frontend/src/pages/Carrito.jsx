@@ -1,10 +1,11 @@
-// src/pages/Carrito.jsx
 import React from "react";
-import axios from "axios";
+import { authFetch } from "../pages/admin/utils/api";
 
 export default function Carrito({ carrito, setCarrito, usuario }) {
-  const total = carrito
-    .reduce((acc, p) => acc + Number(p.precio) * Number(p.cantidad), 0);
+  const total = carrito.reduce(
+    (acc, p) => acc + Number(p.precio) * Number(p.cantidad),
+    0
+  );
 
   const eliminarProducto = (id) => {
     const productoExistente = carrito.find((p) => p.id === id);
@@ -24,7 +25,7 @@ export default function Carrito({ carrito, setCarrito, usuario }) {
   const vaciarCarrito = () => {
     if (window.confirm("¿Seguro que deseas vaciar el carrito?")) {
       setCarrito([]);
-      localStorage.removeItem("carrito"); // opcional: limpia almacenamiento
+      localStorage.removeItem("carrito");
     }
   };
 
@@ -48,32 +49,19 @@ export default function Carrito({ carrito, setCarrito, usuario }) {
         })),
       };
 
-      console.log("Token enviado:", localStorage.getItem("token"));
+      const res = await authFetch("http://127.0.0.1:8000/api/pedidos", {
+        method: "POST",
+        body: JSON.stringify(pedido),
+      });
 
-      const res = await axios.post(
-        "http://127.0.0.1:8000/api/pedidos",
-        pedido,
-        {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`, // <— token aquí
-          },
-        }
-      );
+      if (!res.ok) throw new Error(`Error ${res.status}`);
 
-      if (res.status === 200 || res.status === 201) {
-        alert("✅ Pedido realizado con éxito");
-        setCarrito([]);
-        localStorage.removeItem("carrito");
-      } else {
-        alert("❌ Error al crear el pedido");
-      }
+      alert("✅ Pedido realizado con éxito");
+      setCarrito([]);
+      localStorage.removeItem("carrito");
     } catch (error) {
       console.error("Error creando el pedido:", error);
-      if (error.response?.data) {
-        alert("Error: " + (error.response.data.error || JSON.stringify(error.response.data)));
-      } else {
-        alert("❌ Ocurrió un error al procesar tu pedido.");
-      }
+      alert("❌ Ocurrió un error al procesar tu pedido.");
     }
   };
 
@@ -102,7 +90,9 @@ export default function Carrito({ carrito, setCarrito, usuario }) {
                 {carrito.map((p) => (
                   <tr key={p.id}>
                     <td data-label="Producto">{p.nombre}</td>
-                    <td data-label="Precio Unitario">{Number(p.precio).toFixed(2)} €</td>
+                    <td data-label="Precio Unitario">
+                      {Number(p.precio).toFixed(2)} €
+                    </td>
                     <td data-label="Cantidad">{p.cantidad}</td>
                     <td data-label="Subtotal">
                       {(Number(p.precio) * p.cantidad).toFixed(2)} €

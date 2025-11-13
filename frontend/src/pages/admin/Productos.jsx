@@ -1,4 +1,3 @@
-// src/pages/admin/Productos.jsx
 import React, { useState, useEffect } from "react";
 
 export default function ProductosAdmin() {

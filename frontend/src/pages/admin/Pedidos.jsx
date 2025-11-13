@@ -1,5 +1,5 @@
-// src/pages/admin/Pedidos.jsx
 import React, { useState, useEffect } from "react";
+import { authFetch } from "./utils/api";
 
 export default function PedidosAdmin({ usuario }) {
   const [pedidos, setPedidos] = useState([]);
@@ -8,22 +8,13 @@ export default function PedidosAdmin({ usuario }) {
 
   const API_URL = `http://127.0.0.1:8000/api/pedidos?usuario_id=${usuario?.id}`;
 
-  // 🔹 Cargar pedidos desde la API
+  // 🔹 Cargar pedidos desde la API usando authFetch
   useEffect(() => {
-    const token = localStorage.getItem("token");
-    
-    fetch(API_URL, {
-      headers: {
-        "Authorization": `Bearer ${token}`
-      }
-    })
+    authFetch(API_URL)
       .then((res) => res.json())
-      .then((data) => {
-        setPedidos(data);
-      })
-      .catch((err) => console.error(err));
+      .then((data) => setPedidos(data))
+      .catch((err) => console.error("Error cargando pedidos:", err));
   }, [API_URL]);
-
 
   const handleEstadoChange = (e) => setNuevoEstado(e.target.value);
 
@@ -34,12 +25,9 @@ export default function PedidosAdmin({ usuario }) {
 
   const handleActualizarEstado = (e) => {
     e.preventDefault();
-    fetch(`${API_BASE}/${editId}`, {
+
+    authFetch(`http://127.0.0.1:8000/api/pedidos/${editId}`, {
       method: "PUT",
-      headers: { 
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${localStorage.getItem("token")}`
-       },
       body: JSON.stringify({ estado: nuevoEstado }),
     })
       .then((res) => {
@@ -61,11 +49,8 @@ export default function PedidosAdmin({ usuario }) {
   const handleDelete = (id) => {
     if (!window.confirm("¿Seguro que quieres eliminar este pedido?")) return;
 
-    fetch(`${API_BASE}/${id}`, { 
+    authFetch(`http://127.0.0.1:8000/api/pedidos/${id}`, {
       method: "DELETE",
-      headers: {
-        "Authorization": `Bearer ${localStorage.getItem("token")}`,
-      }
     })
       .then((res) => {
         if (!res.ok) throw new Error(`Error ${res.status}`);

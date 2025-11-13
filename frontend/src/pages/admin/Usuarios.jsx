@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { authFetch } from "./utils/api";
 
 export default function UsuariosAdmin() {
   const [usuarios, setUsuarios] = useState([]);
@@ -20,13 +21,7 @@ export default function UsuariosAdmin() {
 
   // 🔹 Cargar usuarios al iniciar
   useEffect(() => {
-    const token = localStorage.getItem("token");
-
-    fetch(API_URL, {
-      headers: {
-        "Authorization": `Bearer ${token}`
-      }
-    })
+    authFetch(API_URL)
       .then((res) => res.json())
       .then((data) => {
         if (!Array.isArray(data)) {
@@ -37,7 +32,6 @@ export default function UsuariosAdmin() {
       })
       .catch((err) => console.error("Error al cargar usuarios:", err));
   }, []);
-
 
   // 🔹 Manejar cambios en inputs
   const handleChange = (e) => {
@@ -70,12 +64,8 @@ export default function UsuariosAdmin() {
       payload.contrasena = form.password;
     }
 
-    fetch(url, {
+    authFetch(url, {
       method,
-      headers: { 
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${localStorage.getItem("token")}`
-      },
       body: JSON.stringify(payload),
     })
       .then((res) => res.json())
@@ -135,12 +125,7 @@ export default function UsuariosAdmin() {
   const handleDelete = (id) => {
     if (!window.confirm("¿Seguro que quieres eliminar este usuario?")) return;
 
-    fetch(`${API_URL}/${id}`, { 
-      method: "DELETE",
-      headers: {
-        "Authorization": `Bearer ${localStorage.getItem("token")}`,
-      }
-    })
+    authFetch(`${API_URL}/${id}`, { method: "DELETE" })
       .then(() => setUsuarios(usuarios.filter((u) => u.id !== id)))
       .catch((err) => console.error("Error al eliminar usuario:", err));
   };

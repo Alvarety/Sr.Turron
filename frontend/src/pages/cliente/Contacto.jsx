@@ -1,10 +1,8 @@
 import { useState } from "react";
-import axios from "axios";
 import { Link } from "react-router-dom";
+import { authFetch } from "../admin/utils/api"; // 🔹 import correcto
 
 export default function Contacto({ usuario }) {
-
-  // Si NO viene por props → lo leemos de localStorage
   if (!usuario) usuario = JSON.parse(localStorage.getItem("usuario"));
 
   const [nombre] = useState(usuario ? usuario.nombre : "");
@@ -22,37 +20,25 @@ export default function Contacto({ usuario }) {
   }
 
   const enviarFormulario = async (e) => {
-  e.preventDefault();
-
-  // 🔹 Mostrar token en consola para verificar
-  const token = localStorage.getItem("token");
-    console.log("Token enviado:", token);
+    e.preventDefault();
 
     try {
-        await axios.post(
-        "http://127.0.0.1:8000/api/contacto/enviar",
-        {
-            nombre,
-            email,
-            asunto,
-            mensaje,
-        },
-        {
-            headers: {
-            Authorization: `Bearer ${token}`, // ✅ token que se muestra en consola
-            },
-        }
-        );
+      const res = await authFetch("http://127.0.0.1:8000/api/contacto/enviar", {
+        method: "POST",
+        body: JSON.stringify({ nombre, email, asunto, mensaje }),
+      });
 
-        alert("✅ Mensaje enviado correctamente.");
-        setAsunto("");
-        setMensaje("");
+      if (!res.ok) throw new Error(`Error ${res.status}`);
+
+      alert("✅ Mensaje enviado correctamente.");
+      setAsunto("");
+      setMensaje("");
 
     } catch (error) {
-        console.error(error);
-        alert("❌ No se pudo enviar el mensaje. Revisa tu sesión o conexión.");
+      console.error(error);
+      alert("❌ No se pudo enviar el mensaje. Revisa tu sesión o conexión.");
     }
-    };
+  };
 
   return (
     <div className="container my-5">
@@ -95,4 +81,3 @@ export default function Contacto({ usuario }) {
     </div>
   );
 }
-
