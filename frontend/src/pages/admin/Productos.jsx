@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { authFetch } from "./utils/api";
 
 export default function ProductosAdmin() {
   const [productos, setProductos] = useState([]);
@@ -7,7 +8,7 @@ export default function ProductosAdmin() {
     descripcion: "",
     precio: "",
     stock: "",
-    categoria: 1, // ID de Turrones Clásicos por defecto
+    categoria: 1,
     imagenUrl: "",
     activo: true,
   });
@@ -15,9 +16,9 @@ export default function ProductosAdmin() {
 
   const API_URL = "http://127.0.0.1:8000/api/productos";
 
-  // 🔹 Cargar productos
+  // 🔹 Cargar productos con authFetch
   useEffect(() => {
-    fetch(API_URL)
+    authFetch(API_URL)
       .then((res) => res.json())
       .then((data) => setProductos(data))
       .catch((err) => console.error(err));
@@ -31,48 +32,50 @@ export default function ProductosAdmin() {
     });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     const method = editId ? "PUT" : "POST";
     const url = editId ? `${API_URL}/${editId}` : API_URL;
 
-    // Enviar categoria_id como número
     const payload = {
       ...form,
       categoria_id: parseInt(form.categoria),
     };
 
-    fetch(url, {
-      method,
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    })
-      .then((res) => res.json())
-      .then((data) => {
-        const producto = data.producto || data; // por seguridad
-        if (editId) {
-          setProductos(productos.map((p) => (p.id === editId ? producto : p)));
-        } else {
-          setProductos([...productos, producto]);
-        }
-        setForm({
-          nombre: "",
-          descripcion: "",
-          precio: "",
-          stock: "",
-          categoria: 1,
-          imagenUrl: "",
-          activo: true,
-        });
-        setEditId(null);
-      })
-      .catch((err) => console.error(err));
+    try {
+      const res = await authFetch(url, {
+        method,
+        body: JSON.stringify(payload),
+      });
+
+      const data = await res.json();
+      const producto = data.producto || data;
+
+      if (editId) {
+        setProductos(productos.map((p) => (p.id === editId ? producto : p)));
+      } else {
+        setProductos([...productos, producto]);
+      }
+
+      setForm({
+        nombre: "",
+        descripcion: "",
+        precio: "",
+        stock: "",
+        categoria: 1,
+        imagenUrl: "",
+        activo: true,
+      });
+
+      setEditId(null);
+    } catch (err) {
+      console.error("Error al guardar producto:", err);
+    }
   };
 
   const handleEdit = (producto) => {
-    // Convertir nombre de categoría a ID
-    let categoriaId = 1; // Turrones Clásicos por defecto
+    let categoriaId = 1;
     if (producto.categoria === "Turrones de Chocolate") categoriaId = 2;
     else if (producto.categoria === "Turrones Gourmet") categoriaId = 3;
 
@@ -85,14 +88,19 @@ export default function ProductosAdmin() {
       imagenUrl: producto.imagenUrl,
       activo: producto.activo,
     });
+
     setEditId(producto.id);
   };
 
-  const handleDelete = (id) => {
+  const handleDelete = async (id) => {
     if (!window.confirm("¿Seguro que quieres eliminar este producto?")) return;
-    fetch(`${API_URL}/${id}`, { method: "DELETE" })
-      .then(() => setProductos(productos.filter((p) => p.id !== id)))
-      .catch((err) => console.error(err));
+
+    try {
+      await authFetch(`${API_URL}/${id}`, { method: "DELETE" });
+      setProductos(productos.filter((p) => p.id !== id));
+    } catch (err) {
+      console.error("Error al borrar producto:", err);
+    }
   };
 
   return (
@@ -109,6 +117,7 @@ export default function ProductosAdmin() {
           className="form-control mb-2"
           required
         />
+
         <textarea
           name="descripcion"
           placeholder="Descripción"
@@ -117,6 +126,7 @@ export default function ProductosAdmin() {
           className="form-control mb-2"
           required
         />
+
         <input
           type="number"
           name="precio"
@@ -127,6 +137,7 @@ export default function ProductosAdmin() {
           step="0.01"
           required
         />
+
         <input
           type="number"
           name="stock"
@@ -137,7 +148,6 @@ export default function ProductosAdmin() {
           required
         />
 
-        {/* 🔹 Select de Categoría con IDs */}
         <select
           name="categoria"
           value={form.categoria}
@@ -158,6 +168,7 @@ export default function ProductosAdmin() {
           onChange={handleChange}
           className="form-control mb-2"
         />
+
         <div className="form-check mb-2">
           <input
             type="checkbox"
@@ -186,6 +197,7 @@ export default function ProductosAdmin() {
             <th>Acciones</th>
           </tr>
         </thead>
+
         <tbody>
           {productos.map((p) => (
             <tr key={p.id}>
@@ -202,6 +214,7 @@ export default function ProductosAdmin() {
                 >
                   Editar
                 </button>
+
                 <button
                   className="btn btn-sm btn-danger"
                   onClick={() => handleDelete(p.id)}
@@ -212,6 +225,7 @@ export default function ProductosAdmin() {
             </tr>
           ))}
         </tbody>
+
       </table>
     </div>
   );

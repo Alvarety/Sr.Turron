@@ -1,139 +1,117 @@
 import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
-import axios from "axios";
 import { useNavigate } from "react-router-dom";
+import { authFetch } from "../pages/admin/utils/api";
 
 export default function Detalles({ usuario, carrito, setCarrito }) {
   const { id } = useParams();
+  const navigate = useNavigate();
+
   const [producto, setProducto] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
   const [resenas, setResenas] = useState([]);
   const [comentario, setComentario] = useState("");
   const [puntuacion, setPuntuacion] = useState(5);
   const [respuestaTexto, setRespuestaTexto] = useState({});
-  const navigate = useNavigate();
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  useEffect(() => {
-    axios
-      .get(`http://127.0.0.1:8000/api/productos/${id}`)
-      .then((res) => {
-        setProducto(res.data);
-        setLoading(false);
-      })
-      .catch((err) => {
-        console.error("Error cargando producto:", err);
-        setError("No se pudo cargar el producto");
-        setLoading(false);
-      });
-  }, [id]);
-
-  useEffect(() => {
-    axios
-      .get(`http://127.0.0.1:8000/api/productos/${id}/resenas`)
-      .then((res) => setResenas(res.data))
-      .catch((err) => console.log("Error cargando reseñas:", err));
-  }, [id]);
-
-  // 🔹 Agregar al carrito con cantidad elegida
-  const agregarAlCarrito = () => {
-    if (!usuario) {
-      alert("Debes iniciar sesión para comprar 🛒");
-      navigate("/login");
-      return;
-    }
-
-    if (!producto) return;
-
-    const cantidadStr = prompt(
-      `¿Cuántas unidades de "${producto.nombre}" deseas añadir al carrito?`,
-      "1"
-    );
-
-    const cantidad = parseInt(cantidadStr, 10);
-
-    if (isNaN(cantidad) || cantidad <= 0) {
-      alert("Por favor, introduce una cantidad válida.");
-      return;
-    }
-
-    const existente = carrito.find((p) => p.id === producto.id);
-    if (existente) {
-      // Si ya existe, sumamos a la cantidad actual
-      setCarrito(
-        carrito.map((p) =>
-          p.id === producto.id
-            ? { ...p, cantidad: p.cantidad + cantidad }
-            : p
-        )
-      );
-    } else {
-      // Si no existe, lo agregamos con la cantidad seleccionada
-      setCarrito([...carrito, { ...producto, cantidad }]);
-    }
-
-    alert(
-      `🛍️ Se han añadido ${cantidad} ${producto.nombre}${
-        cantidad > 1 ? "s" : ""
-      } al carrito.`
-    );
-  };
-
-  const enviarResena = async () => {
-    if (!usuario) {
-      alert("Debes iniciar sesión para dejar una reseña");
-      navigate("/login");
-      return;
-    }
-
+  // 🔹 Función para cargar producto y reseñas
+  const fetchProductoYResenas = async () => {
     try {
-      await axios.post("http://127.0.0.1:8000/api/resenas", {
-        usuario_id: usuario.id,
-        producto_id: producto.id,
-        comentario,
-        puntuacion
-      });
+      const prodRes = await authFetch(`http://127.0.0.1:8000/api/productos/${id}`);
+      if (!prodRes.ok) throw new Error("Error cargando producto");
+      const prodData = await prodRes.json();
+      setProducto(prodData);
 
-      alert("✅ Reseña enviada correctamente");
-      setComentario("");
-      setPuntuacion(0);
-
-      // Recargar reseñas
-      const res = await axios.get(`http://127.0.0.1:8000/api/productos/${producto.id}/resenas`);
-      setResenas(res.data);
+      const resRes = await authFetch(`http://127.0.0.1:8000/api/productos/${id}/resenas`);
+      if (!resRes.ok) throw new Error("Error cargando reseñas");
+      const resData = await resRes.json();
+      setResenas(resData);
 
     } catch (err) {
       console.error(err);
-      alert("❌ Error al enviar reseña");
+      setError("No se pudo cargar el producto o las reseñas");
+    } finally {
+      setLoading(false);
     }
   };
 
-  const enviarComentario = async (resenaId) => {
-    if (!usuario) {
-      alert("Debes iniciar sesión para comentar.");
-      navigate("/login");
-      return;
+  useEffect(() => {
+    fetchProductoYResenas();
+  }, [id]);
+
+  // 🔹 Agregar al carrito
+  const agregarAlCarrito = () => {
+    if (!usuario) return navigate("/login");
+
+    if (!producto) return;
+
+    const cantidad = parseInt(prompt(`¿Cuántas unidades de "${producto.nombre}" deseas añadir al carrito?`, "1"), 10);
+    if (isNaN(cantidad) || cantidad <= 0) {
+      return alert("Introduce una cantidad válida.");
     }
+
+    const existente = carrito.find(p => p.id === producto.id);
+    if (existente) {
+      setCarrito(carrito.map(p => p.id === producto.id ? { ...p, cantidad: p.cantidad + cantidad } : p));
+    } else {
+      setCarrito([...carrito, { ...producto, cantidad }]);
+    }
+
+    alert(`🛍️ Se han añadido ${cantidad} ${producto.nombre}${cantidad > 1 ? "s" : ""} al carrito.`);
+  };
+
+  // 🔹 Enviar reseña
+  const enviarResena = async () => {
+    if (!usuario) return navigate("/login");
+
+    try {
+      const res = await authFetch(`http://127.0.0.1:8000/api/resenas`, {
+        method: "POST",
+        body: JSON.stringify({
+          usuario_id: usuario.id,
+          producto_id: producto.id,
+          comentario,
+          puntuacion
+        })
+      });
+
+      if (!res.ok) throw new Error("Error al enviar reseña");
+
+      alert("✅ Reseña enviada correctamente");
+      setComentario("");
+      setPuntuacion(5);
+
+      fetchProductoYResenas();
+    } catch (err) {
+      console.error(err);
+      alert("❌ No se pudo enviar la reseña");
+    }
+  };
+
+  // 🔹 Enviar comentario a una reseña
+  const enviarComentario = async (resenaId) => {
+    if (!usuario) return navigate("/login");
 
     const texto = respuestaTexto[resenaId];
     if (!texto || texto.trim() === "") return;
 
     try {
-      await axios.post(`http://127.0.0.1:8000/api/resenas/${resenaId}/comentarios`, {
-        usuario_id: usuario.id,
-        texto,
+      const res = await authFetch(`http://127.0.0.1:8000/api/resenas/${resenaId}/comentarios`, {
+        method: "POST",
+        body: JSON.stringify({
+          usuario_id: usuario.id,
+          texto
+        })
       });
 
-      // Limpiar input
+      if (!res.ok) throw new Error("Error al enviar comentario");
+
       setRespuestaTexto({ ...respuestaTexto, [resenaId]: "" });
-
-      // Recargar reseñas
-      const res = await axios.get(`http://127.0.0.1:8000/api/productos/${producto.id}/resenas`);
-      setResenas(res.data);
-
-    } catch (e) {
-      console.error(e);
-      alert("❌ Error al enviar comentario");
+      fetchProductoYResenas();
+    } catch (err) {
+      console.error(err);
+      alert("❌ No se pudo enviar el comentario");
     }
   };
 
@@ -145,35 +123,22 @@ export default function Detalles({ usuario, carrito, setCarrito }) {
       <div className="card shadow-lg p-4">
         <div className="row g-4 align-items-center">
           <div className="col-md-5 text-center">
-            <img
-              src={producto.imagenUrl}
-              alt={producto.nombre}
-              className="img-fluid rounded"
-              style={{ maxHeight: "400px", objectFit: "cover" }}
-            />
+            <img src={producto.imagenUrl} alt={producto.nombre} className="img-fluid rounded" style={{ maxHeight: "400px", objectFit: "cover" }} />
           </div>
-
           <div className="col-md-7">
             <h2 className="mb-3">{producto.nombre}</h2>
             <p className="text-muted">{producto.descripcion}</p>
-            <p>
-              <strong>Categoría:</strong> {producto.categoria}
-            </p>
+            <p><strong>Categoría:</strong> {producto.categoria}</p>
             <h4 className="text-success mb-4">{producto.precio} €</h4>
-
-            <button onClick={agregarAlCarrito} className="btn btn-primary me-3">
-              Agregar al carrito 🛍️
-            </button>
-            <Link to="/productos" className="btn btn-secondary">
-              Volver al catálogo
-            </Link>
+            <button onClick={agregarAlCarrito} className="btn btn-primary me-3">Agregar al carrito 🛍️</button>
+            <Link to="/productos" className="btn btn-secondary">Volver al catálogo</Link>
           </div>
         </div>
       </div>
+
       <div className="container mt-4">
         <h3>Reseñas</h3>
         <hr />
-
         {resenas.length === 0 && <p>No hay reseñas todavía.</p>}
 
         {resenas.map((r) => (
@@ -182,53 +147,31 @@ export default function Detalles({ usuario, carrito, setCarrito }) {
             <p>{r.comentario}</p>
             <small className="text-muted">{r.fecha}</small>
 
-            {/* Mostrar comentarios */}
             {r.respuestas.length > 0 && (
               <div className="mt-3 ps-3 border-start">
                 {r.respuestas.map((c, index) => (
-                  <p key={index}>
-                    <strong>{c.usuario}</strong>: {c.texto}
-                    <br />
-                    <small className="text-muted">{c.fecha}</small>
-                  </p>
+                  <p key={index}><strong>{c.usuario}</strong>: {c.texto}<br /><small className="text-muted">{c.fecha}</small></p>
                 ))}
               </div>
             )}
 
-            {/* Formulario para añadir comentario */}
             {usuario && (
               <div className="mt-2">
                 <textarea
                   className="form-control mb-2"
                   placeholder="Escribe una respuesta..."
                   value={respuestaTexto[r.id] || ""}
-                  onChange={(e) =>
-                    setRespuestaTexto({ ...respuestaTexto, [r.id]: e.target.value })
-                  }
-                ></textarea>
-                <button
-                  className="btn btn-sm btn-outline-primary"
-                  onClick={() => enviarComentario(r.id)}
-                >
-                  Responder 💬
-                </button>
+                  onChange={(e) => setRespuestaTexto({ ...respuestaTexto, [r.id]: e.target.value })}
+                />
+                <button className="btn btn-sm btn-outline-primary" onClick={() => enviarComentario(r.id)}>Responder 💬</button>
               </div>
             )}
           </div>
         ))}
 
         <h4 className="mt-4">Escribe tu reseña</h4>
-
-        <select
-          value={puntuacion}
-          onChange={(e) => setPuntuacion(e.target.value)}
-          className="form-select w-auto mb-2"
-        >
-          {[1, 2, 3, 4, 5].map((n) => (
-            <option key={n} value={n}>
-              {n} ⭐
-            </option>
-          ))}
+        <select value={puntuacion} onChange={(e) => setPuntuacion(parseInt(e.target.value))} className="form-select w-auto mb-2">
+          {[1,2,3,4,5].map(n => <option key={n} value={n}>{n} ⭐</option>)}
         </select>
 
         <textarea
@@ -236,11 +179,8 @@ export default function Detalles({ usuario, carrito, setCarrito }) {
           value={comentario}
           onChange={(e) => setComentario(e.target.value)}
           placeholder="Escribe tu opinión..."
-        ></textarea>
-
-        <button className="btn btn-primary" onClick={enviarResena}>
-          Publicar reseña
-        </button>
+        />
+        <button className="btn btn-primary" onClick={enviarResena}>Publicar reseña</button>
       </div>
     </div>
   );

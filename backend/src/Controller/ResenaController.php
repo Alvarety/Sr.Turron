@@ -11,6 +11,10 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\Mailer\MailerInterface;
+use Symfony\Component\Mime\Email;
+use Symfony\Component\Mailer\Messenger\SendEmailMessage;
+use Symfony\Component\Messenger\MessageBusInterface;
 
 class ResenaController extends AbstractController
 {
@@ -41,8 +45,11 @@ class ResenaController extends AbstractController
 
     // Crear reseña nueva
     #[Route('/api/resenas', methods: ['POST'])]
-    public function crearResena(Request $request, EntityManagerInterface $em): JsonResponse
-    {
+    public function crearResena(
+        Request $request,
+        EntityManagerInterface $em,
+        MessageBusInterface $bus // 👈 inyección del servicio
+    ): JsonResponse {
         $data = json_decode($request->getContent(), true);
 
         $usuario = $em->getRepository(Usuario::class)->find($data['usuario_id']);
@@ -52,7 +59,7 @@ class ResenaController extends AbstractController
             return $this->json(['error' => 'Usuario o Producto inválido'], 400);
         }
 
-        // Evitar reseña duplicada por usuario
+        // Evitar reseña duplicada
         $existe = $em->getRepository(Resena::class)->findOneBy([
             'usuario' => $usuario,
             'producto' => $producto
@@ -62,6 +69,7 @@ class ResenaController extends AbstractController
             return $this->json(['error' => 'Ya has reseñado este producto'], 409);
         }
 
+        // Crear reseña
         $resena = new Resena();
         $resena->setUsuario($usuario);
         $resena->setProducto($producto);
@@ -71,13 +79,36 @@ class ResenaController extends AbstractController
         $em->persist($resena);
         $em->flush();
 
+        //
+        // 🔔 **ENVÍO DE EMAIL AL ADMIN**
+        //
+        $email = (new Email())
+            ->from('notificaciones@srturron.com')
+            ->to('candonromeroalvaro2@gmail.com') // 👉 TU CORREO
+            ->subject('Nueva reseña recibida en Sr. Turrón')
+            ->text(
+                "Nueva reseña publicada:\n\n" .
+                "Usuario: {$usuario->getNickname()} ({$usuario->getEmail()})\n" .
+                "Producto: {$producto->getNombre()}\n" .
+                "Puntuación: {$data['puntuacion']} / 5\n\n" .
+                "Comentario:\n{$data['comentario']}\n\n" .
+                "Fecha: " . (new \DateTime())->format('Y-m-d H:i') . "\n"
+            );
+
+        // Enviar por Messenger
+        $bus->dispatch(new SendEmailMessage($email));
+
         return $this->json(['message' => 'Reseña añadida correctamente']);
     }
 
     // Crear comentario en una reseña
     #[Route('/api/resenas/{id}/comentarios', methods: ['POST'])]
-    public function comentarResena(int $id, Request $request, EntityManagerInterface $em): JsonResponse
-    {
+    public function comentarResena(
+        int $id,
+        Request $request,
+        EntityManagerInterface $em,
+        MailerInterface $mailer
+    ): JsonResponse {
         $data = json_decode($request->getContent(), true);
 
         $usuario = $em->getRepository(Usuario::class)->find($data['usuario_id']);
@@ -95,6 +126,24 @@ class ResenaController extends AbstractController
         $em->persist($comentario);
         $em->flush();
 
-        return $this->json(['message' => 'Comentario añadido correctamente']);
+        // Obtener producto de la reseña
+        $producto = $resena->getProducto();
+
+        // Enviar email de notificación
+        $email = (new Email())
+            ->from('notificaciones@srturron.com')
+            ->to('candonromeroalvaro2@gmail.com') // Tu correo
+            ->subject('Nuevo comentario en una reseña de Sr. Turrón')
+            ->text(
+                "Se ha publicado un nuevo comentario en una reseña:\n\n" .
+                "Usuario: {$usuario->getNickname()} ({$usuario->getEmail()})\n" .
+                "Producto: {$producto->getNombre()}\n" .
+                "Comentario:\n{$comentario->getTexto()}\n\n" .
+                "Fecha: " . (new \DateTime())->format('Y-m-d H:i') . "\n"
+            );
+
+        $mailer->send($email);
+
+        return $this->json(['message' => 'Comentario añadido y notificación enviada correctamente']);
     }
 }
