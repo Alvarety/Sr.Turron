@@ -16,6 +16,8 @@ import Ofertas from "../src/pages/cliente/Ofertas";
 import Contacto from "../src/pages/cliente/Contacto";
 import RutaProtegidaRol from "../src/components/RutaProtegidaRol";
 import ResetPassword from "../src/pages/ResetPassword";
+import EmpleadoPedidos from "../src/pages/empleado/EmpleadoPedidos";
+import EmpleadoEstado from "../src/pages/empleado/EmpleadoEstado";
 
 export default function RouterPrincipal({ usuario, setUsuario, carrito, setCarrito }) {
   return (
@@ -142,6 +144,28 @@ export default function RouterPrincipal({ usuario, setUsuario, carrito, setCarri
             </LayoutPrincipal>
           </RutaProtegidaRol>
         } 
+      />
+      {/* Rutas de empleado */}
+      <Route 
+        path="/empleado/pedidos" 
+        element={
+          <RutaProtegidaRol usuario={usuario} rolesPermitidos={["empleado", "admin"]}>
+            <LayoutPrincipal usuario={usuario} setUsuario={setUsuario}>
+              <EmpleadoPedidos usuario={usuario} />
+            </LayoutPrincipal>
+          </RutaProtegidaRol>
+        }
+      />
+
+      <Route 
+        path="/empleado/estado" 
+        element={
+          <RutaProtegidaRol usuario={usuario} rolesPermitidos={["empleado", "admin"]}>
+            <LayoutPrincipal usuario={usuario} setUsuario={setUsuario}>
+              <EmpleadoEstado usuario={usuario} />
+            </LayoutPrincipal>
+          </RutaProtegidaRol>
+        }
       />
     </Routes>
   );
