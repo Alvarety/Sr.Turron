@@ -10,7 +10,7 @@ import Usuarios from "../src/pages/admin/Usuarios";
 import ProductosAdmin from "../src/pages/admin/Productos";
 import Pedidos from "../src/pages/admin/Pedidos";
 import Detalles from "../src/pages/Detalles";
-import Perfil from "../src/pages/Perfil"; // <-- tu nuevo componente de perfil
+import Perfil from "../src/pages/Perfil";
 import Novedades from "../src/pages/cliente/Novedades";
 import Ofertas from "../src/pages/cliente/Ofertas";
 import Contacto from "../src/pages/cliente/Contacto";
@@ -18,6 +18,7 @@ import RutaProtegidaRol from "../src/components/RutaProtegidaRol";
 import ResetPassword from "../src/pages/ResetPassword";
 import EmpleadoPedidos from "../src/pages/empleado/EmpleadoPedidos";
 import EmpleadoEstado from "../src/pages/empleado/EmpleadoEstado";
+import PedidoPago from "../src/pages/PedidoPago";
 
 export default function RouterPrincipal({ usuario, setUsuario, carrito, setCarrito }) {
   return (
@@ -87,6 +88,20 @@ export default function RouterPrincipal({ usuario, setUsuario, carrito, setCarri
           usuario ? (
             <LayoutPrincipal usuario={usuario}>
               <Carrito usuario={usuario} carrito={carrito} setCarrito={setCarrito} />
+            </LayoutPrincipal>
+          ) : (
+            <LayoutMinimal>
+              <Login setUsuario={setUsuario} />
+            </LayoutMinimal>
+          )
+        }
+      />
+      <Route 
+        path="/pedido-pago/:id" 
+        element={
+          usuario ? (
+            <LayoutPrincipal usuario={usuario} setUsuario={setUsuario}>
+              <PedidoPago usuario={usuario} />
             </LayoutPrincipal>
           ) : (
             <LayoutMinimal>

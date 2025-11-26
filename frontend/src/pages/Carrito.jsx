@@ -1,7 +1,9 @@
 import React from "react";
+import { useNavigate } from "react-router-dom";
 import { authFetch } from "../pages/admin/utils/api";
 
 export default function Carrito({ carrito, setCarrito, usuario }) {
+  const navigate = useNavigate();
   const total = carrito.reduce(
     (acc, p) => acc + Number(p.precio) * Number(p.cantidad),
     0
@@ -47,6 +49,7 @@ export default function Carrito({ carrito, setCarrito, usuario }) {
           id: p.id,
           cantidad: p.cantidad,
         })),
+        metodo_pago: "contra_reembolso", // predeterminado, puedes permitir elegir
       };
 
       const res = await authFetch("http://127.0.0.1:8000/api/pedidos", {
@@ -56,9 +59,15 @@ export default function Carrito({ carrito, setCarrito, usuario }) {
 
       if (!res.ok) throw new Error(`Error ${res.status}`);
 
+      const data = await res.json();
       alert("✅ Pedido realizado con éxito");
+
+      // Limpiar carrito
       setCarrito([]);
       localStorage.removeItem("carrito");
+
+      // Redirigir al flujo de pago
+      navigate(`/pedido-pago/${data.pedido_id}`);
     } catch (error) {
       console.error("Error creando el pedido:", error);
       alert("❌ Ocurrió un error al procesar tu pedido.");

@@ -5,6 +5,7 @@ namespace App\Controller;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
+use App\Entity\Pago;
 use App\Entity\Pedido;
 use App\Entity\Usuario;
 use App\Entity\Producto;
@@ -131,6 +132,17 @@ final class PedidoController extends AbstractController
         $em->persist($pedido);
         $em->flush();
 
+        // 🔹 Crear Pago asociado al pedido
+        $pago = new Pago();
+        $pago->setPedido($pedido)
+            ->setMonto($total)
+            ->setMetodoPago($data['metodo_pago'] ?? 'contra_reembolso')
+            ->setFechaPago(new \DateTime())
+            ->setEstadoPago('completado'); // simulado
+
+        $em->persist($pago);
+        $em->flush();
+
         // ========================
         // 🔹 Enviar correo con los detalles del pedido
         // ========================
@@ -209,5 +221,38 @@ final class PedidoController extends AbstractController
             'message' => 'Pedido eliminado correctamente',
             'pedido_id' => $id,
         ]);
+    }
+
+    // =========================
+    // ✅ Obtener un pedido por ID
+    // =========================
+    #[Route('/api/pedidos/{id}', name:'api_pedidos_ver', methods:['GET'])]
+    public function verPedido(EntityManagerInterface $em, int $id): JsonResponse
+    {
+        $pedido = $em->getRepository(Pedido::class)->find($id);
+        if (!$pedido) {
+            return $this->json(['error'=>'Pedido no encontrado'], 404);
+        }
+
+        $data = [
+            'id' => $pedido->getId(),
+            'fecha' => $pedido->getFechapedido()->format('Y-m-d H:i:s'),
+            'estado' => $pedido->getEstado(),
+            'total' => $pedido->getTotal(),
+            'direccion_envio' => $pedido->getDireccionEnvio(),
+            'usuario' => [
+                'id' => $pedido->getUsuario()->getId(),
+                'nombre' => $pedido->getUsuario()->getNombre(),
+                'email' => $pedido->getUsuario()->getEmail(),
+            ],
+            'detalles' => array_map(fn($d) => [
+                'producto' => $d->getProducto()->getNombre(),
+                'cantidad' => $d->getCantidad(),
+                'precio_unitario' => $d->getPrecioUnitario(),
+                'subtotal' => $d->getSubtotal()
+            ], $pedido->getPedidoDetalles()->toArray())
+        ];
+
+        return $this->json($data);
     }
 }

@@ -29,7 +29,7 @@ class Pago
     #[ORM\Column(length: 20)]
     private ?string $estadoPago = 'pendiente';
 
-    public const METODOS = ['tarjeta','paypal','transferencia','contra_reembolso'];
+    public const METODOS = ['tarjeta','transferencia','contra_reembolso'];
     public const ESTADOS = ['pendiente','completado','fallido'];
 
     public function getId(): ?int
