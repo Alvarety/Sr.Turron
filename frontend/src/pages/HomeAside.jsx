@@ -70,6 +70,15 @@ export default function HomeAside({ usuario }) {
         <>
           <ul className="list-group mb-3">
             <li className="list-group-item">
+              <Link to="/ofertas">Ofertas Especiales</Link>
+            </li>
+            <li className="list-group-item">
+              <Link to="/novedades">Novedades</Link>
+            </li>
+            <li className="list-group-item">
+              <Link to="/contacto">Contacto</Link>
+            </li>
+            <li className="list-group-item">
               <Link to="/admin/usuarios">Gestión de Usuarios</Link>
             </li>
             <li className="list-group-item">
@@ -77,6 +86,12 @@ export default function HomeAside({ usuario }) {
             </li>
             <li className="list-group-item">
               <Link to="/admin/pedidos">Gestión de Pedidos</Link>
+            </li>
+            <li className="list-group-item">
+              <Link to="/empleado/pedidos">Ver Pedidos Asignados</Link>
+            </li>
+            <li className="list-group-item">
+              <Link to="/empleado/estado">Actualizar Estado de Pedido</Link>
             </li>
           </ul>
 
@@ -127,6 +142,18 @@ export default function HomeAside({ usuario }) {
       {rol === "empleado" && (
         <>
           <ul className="list-group mb-3">
+            <li className="list-group-item">
+              <Link to="/ofertas">Ofertas Especiales</Link>
+            </li>
+            <li className="list-group-item">
+              <Link to="/novedades">Novedades</Link>
+            </li>
+            <li className="list-group-item">
+              <Link to="/contacto">Contacto</Link>
+            </li>
+            <li className="list-group-item">
+              <Link to="/admin/productos">Gestión de Productos</Link>
+            </li>
             <li className="list-group-item">
               <Link to="/empleado/pedidos">Ver Pedidos Asignados</Link>
             </li>

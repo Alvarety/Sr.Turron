@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
-import { authFetch } from "../pages/admin/utils/api";
+import { authFetch } from "../pages/admin/utils/api"; // solo para acciones que requieren login
 
 export default function Detalles({ usuario, carrito, setCarrito }) {
   const { id } = useParams();
@@ -15,15 +15,17 @@ export default function Detalles({ usuario, carrito, setCarrito }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // 🔹 Función para cargar producto y reseñas
+  // 🔹 Cargar producto y reseñas (público)
   const fetchProductoYResenas = async () => {
     try {
-      const prodRes = await authFetch(`http://127.0.0.1:8000/api/productos/${id}`);
+      // Producto
+      const prodRes = await fetch(`http://127.0.0.1:8000/api/productos/${id}`);
       if (!prodRes.ok) throw new Error("Error cargando producto");
       const prodData = await prodRes.json();
       setProducto(prodData);
 
-      const resRes = await authFetch(`http://127.0.0.1:8000/api/productos/${id}/resenas`);
+      // Reseñas
+      const resRes = await fetch(`http://127.0.0.1:8000/api/productos/${id}/resenas`);
       if (!resRes.ok) throw new Error("Error cargando reseñas");
       const resData = await resRes.json();
       setResenas(resData);
@@ -40,13 +42,15 @@ export default function Detalles({ usuario, carrito, setCarrito }) {
     fetchProductoYResenas();
   }, [id]);
 
-  // 🔹 Agregar al carrito
+  // 🔹 Agregar al carrito (requiere usuario)
   const agregarAlCarrito = () => {
     if (!usuario) return navigate("/login");
-
     if (!producto) return;
 
-    const cantidad = parseInt(prompt(`¿Cuántas unidades de "${producto.nombre}" deseas añadir al carrito?`, "1"), 10);
+    const cantidad = parseInt(
+      prompt(`¿Cuántas unidades de "${producto.nombre}" deseas añadir al carrito?`, "1"),
+      10
+    );
     if (isNaN(cantidad) || cantidad <= 0) {
       return alert("Introduce una cantidad válida.");
     }
@@ -61,7 +65,7 @@ export default function Detalles({ usuario, carrito, setCarrito }) {
     alert(`🛍️ Se han añadido ${cantidad} ${producto.nombre}${cantidad > 1 ? "s" : ""} al carrito.`);
   };
 
-  // 🔹 Enviar reseña
+  // 🔹 Enviar reseña (requiere usuario)
   const enviarResena = async () => {
     if (!usuario) return navigate("/login");
 
@@ -81,7 +85,6 @@ export default function Detalles({ usuario, carrito, setCarrito }) {
       alert("✅ Reseña enviada correctamente");
       setComentario("");
       setPuntuacion(5);
-
       fetchProductoYResenas();
     } catch (err) {
       console.error(err);
@@ -89,7 +92,7 @@ export default function Detalles({ usuario, carrito, setCarrito }) {
     }
   };
 
-  // 🔹 Enviar comentario a una reseña
+  // 🔹 Enviar comentario a una reseña (requiere usuario)
   const enviarComentario = async (resenaId) => {
     if (!usuario) return navigate("/login");
 
@@ -130,7 +133,9 @@ export default function Detalles({ usuario, carrito, setCarrito }) {
             <p className="text-muted">{producto.descripcion}</p>
             <p><strong>Categoría:</strong> {producto.categoria}</p>
             <h4 className="text-success mb-4">{producto.precio} €</h4>
-            <button onClick={agregarAlCarrito} className="btn btn-primary me-3">Agregar al carrito 🛍️</button>
+            <button onClick={agregarAlCarrito} className="btn btn-primary me-3">
+              Agregar al carrito 🛍️
+            </button>
             <Link to="/productos" className="btn btn-secondary">Volver al catálogo</Link>
           </div>
         </div>
@@ -169,18 +174,21 @@ export default function Detalles({ usuario, carrito, setCarrito }) {
           </div>
         ))}
 
-        <h4 className="mt-4">Escribe tu reseña</h4>
-        <select value={puntuacion} onChange={(e) => setPuntuacion(parseInt(e.target.value))} className="form-select w-auto mb-2">
-          {[1,2,3,4,5].map(n => <option key={n} value={n}>{n} ⭐</option>)}
-        </select>
-
-        <textarea
-          className="form-control mb-2"
-          value={comentario}
-          onChange={(e) => setComentario(e.target.value)}
-          placeholder="Escribe tu opinión..."
-        />
-        <button className="btn btn-primary" onClick={enviarResena}>Publicar reseña</button>
+        {usuario && (
+          <>
+            <h4 className="mt-4">Escribe tu reseña</h4>
+            <select value={puntuacion} onChange={(e) => setPuntuacion(parseInt(e.target.value))} className="form-select w-auto mb-2">
+              {[1,2,3,4,5].map(n => <option key={n} value={n}>{n} ⭐</option>)}
+            </select>
+            <textarea
+              className="form-control mb-2"
+              value={comentario}
+              onChange={(e) => setComentario(e.target.value)}
+              placeholder="Escribe tu opinión..."
+            />
+            <button className="btn btn-primary" onClick={enviarResena}>Publicar reseña</button>
+          </>
+        )}
       </div>
     </div>
   );
