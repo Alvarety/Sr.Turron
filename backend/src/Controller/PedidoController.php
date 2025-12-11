@@ -133,15 +133,15 @@ final class PedidoController extends AbstractController
         $em->flush();
 
         // 🔹 Crear Pago asociado al pedido
-        $pago = new Pago();
-        $pago->setPedido($pedido)
-            ->setMonto($total)
-            ->setMetodoPago($data['metodo_pago'] ?? 'contra_reembolso')
-            ->setFechaPago(new \DateTime())
-            ->setEstadoPago('completado'); // simulado
+        // $pago = new Pago();
+        // $pago->setPedido($pedido)
+        //     ->setMonto($total)
+        //     ->setMetodoPago($data['metodo_pago'] ?? 'contra_reembolso')
+        //     ->setFechaPago(new \DateTime())
+        //     ->setEstadoPago('completado'); // simulado
 
-        $em->persist($pago);
-        $em->flush();
+        // $em->persist($pago);
+        // $em->flush();
 
         // ========================
         // 🔹 Enviar correo con los detalles del pedido
